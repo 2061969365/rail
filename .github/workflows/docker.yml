@@ -1,30 +1,30 @@
-name: 自动构建并推送到 Docker Hub
+name: 纯 GitHub 闭环全自动打包
 
-# 触发条件：当你把代码 push 到 main 分支时自动触发
 on:
   push:
     branches: [ "main" ]
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest # 使用 GitHub 提供的免费 Ubuntu 服务器
+    runs-on: ubuntu-latest
     steps:
-      # 1. 把你的代码拉取到 GitHub 服务器上
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # 2. 登录到 Docker Hub (使用你刚才配置的密钥)
-      - name: Log in to Docker Hub
+      # 🌟 改变 1：登录到 GitHub 自家的镜像仓库（GHCR）
+      # 这里连密码都不用配，GitHub 会自动用内置的临时权限令牌（GITHUB_TOKEN）登录
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 3. 自动构建镜像并推送到你的 Docker Hub 账号下
+      # 🌟 改变 2：构建并推送到 ghcr.io 下
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          # 格式：你的用户名/镜像名:标签
-          tags: ${{ secrets.DOCKER_USERNAME }}/stealth-node:latest
+          # 镜像名字会变成：ghcr.io/你的github用户名/stealth-node:latest
+          tags: ghcr.io/${{ github.repository }}:latest
